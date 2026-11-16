@@ -349,6 +349,24 @@ test('an undeclared model-directory service is read through ctx.get, never direc
   assert.equal(element.props['data-detached'], 'false')
 })
 
+test('the timeline labels sit on the same axis as the bar', () => {
+  const children = internals.Timeline(SNAPSHOT, 'ru-RU').children.flat(Infinity)
+  const ticks = children.find((child) => child && child.props && child.props.key === 'ticks')
+  assert.ok(ticks, 'the tick row exists')
+  const labels = ticks.children.flat(Infinity)
+  assert.deepEqual(labels.map((tick) => tick.props.style.left), ['0.00%', '25.00%', '50.00%', '75.00%', '100.00%'])
+  assert.deepEqual(labels.map((tick) => tick.props['data-edge']), ['start', 'mid', 'mid', 'mid', 'end'])
+  assert.equal(labels.at(-1).children[0], '24:00')
+  // The bar and the labels share one origin: the last segment never ends past it.
+  const track = children.find((child) => child && child.props && child.props.key === 'track')
+  for (const segment of track.children.flat(Infinity)) {
+    if (segment.props.className !== 'dpc-seg') continue
+    const left = Number.parseFloat(segment.props.style.left)
+    const width = Number.parseFloat(segment.props.style.width)
+    assert.ok(left >= 0 && left + width <= 100.01, `${left}+${width}`)
+  }
+})
+
 test('placePanel keeps the card inside the viewport', () => {
   const anchor = { getBoundingClientRect: () => ({ left: 1100, right: 1180, top: 700, bottom: 724 }) }
   const placed = internals.placePanel(anchor, 340)

@@ -909,7 +909,11 @@ window.__ModuleLoader__.load({
 .dpc-track { position: relative; height: 6px; margin-top: 10px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
 .dpc-seg { position: absolute; top: 0; bottom: 0; background: var(--dsw-alias-state-warn-primary); }
 .dpc-now { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--dsw-alias-label-primary); }
-.dpc-ticks { display: flex; justify-content: space-between; margin-top: 3px; color: var(--dsw-alias-label-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dpc-ticks { position: relative; height: 15px; margin-top: 3px; color: var(--dsw-alias-label-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dpc-tick { position: absolute; top: 0; white-space: nowrap; }
+.dpc-tick[data-edge="start"] { transform: translateX(0); }
+.dpc-tick[data-edge="mid"] { transform: translateX(-50%); }
+.dpc-tick[data-edge="end"] { transform: translateX(-100%); }
 .dpc-next { margin-top: 8px; color: var(--dsw-alias-label-secondary); }
 .dpc-sect { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); }
 .dpc-sect-title { color: var(--dsw-alias-label-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -1321,9 +1325,13 @@ window.__ModuleLoader__.load({
      */
     function Timeline(snapshot, locale) {
       const { timeline, zone } = snapshot
-      const ticks = [0, 0.25, 0.5, 0.75].map((fraction) =>
-        formatClock(timeline.dayStartMs + fraction * timeline.dayMs, zone, locale))
-      ticks.push('24:00')
+      const fractions = [0, 0.25, 0.5, 0.75, 1]
+      const ticks = fractions.map((fraction, index) => ({
+        fraction,
+        label: index === fractions.length - 1
+          ? '24:00'
+          : formatClock(timeline.dayStartMs + fraction * timeline.dayMs, zone, locale),
+      }))
       return h('div', { key: 'timeline', 'aria-hidden': 'true' }, [
         h('div', { key: 'track', className: 'dpc-track' }, [
           ...timeline.segments.map((segment, index) => h('span', {
@@ -1333,8 +1341,15 @@ window.__ModuleLoader__.load({
           })),
           h('span', { key: 'now', className: 'dpc-now', style: { left: percent(timeline.nowFraction) } }),
         ]),
+        // Each label sits on its own instant, so the axis matches the bar; the
+        // first and last labels hug the edges instead of overflowing them.
         h('div', { key: 'ticks', className: 'dpc-ticks' },
-          ticks.map((label, index) => h('span', { key: `tick-${index}` }, label))),
+          ticks.map((tick, index) => h('span', {
+            key: `tick-${index}`,
+            className: 'dpc-tick',
+            'data-edge': index === 0 ? 'start' : index === ticks.length - 1 ? 'end' : 'mid',
+            style: { left: percent(tick.fraction) },
+          }, tick.label))),
       ])
     }
 
