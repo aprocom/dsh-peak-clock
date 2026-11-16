@@ -24,13 +24,16 @@ The detail panel is a card portalled to the page body, so it is never clipped by
 - **countdown** to the exact moment the price changes, with the rate chip (`full price` / `half price`);
 - **local-day timeline**: your own day from 00:00 to 24:00, every peak stretch in amber, a marker for now;
 - **next change**: `Peak starts today at 04:00` — with `tomorrow` or a date when it is not today;
-- **peak hours in your timezone**, today's reason (weekday, weekend, or the holiday name), and the time in Beijing;
+- **peak hours in your timezone**, your zone with its UTC offset, the policy day in Beijing (weekday,
+  weekend, or the holiday name), and the time in Beijing;
 - **price table**: cache-hit input, cache-miss input and output for `deepseek-flash` and
   `deepseek-v4-pro`, peak and off-peak, in USD per 1M tokens, with the date it was checked;
-- **money**: the Platform balance (recharge and bonus wallets) and this session's spend, priced
-  message by message at the window each request settled in;
+- **money**: the Platform balance (recharge and bonus wallets, shown for any provider because it is
+  account-wide) and, for a DeepSeek route, this session's spend in USD, priced message by message at
+  the window each request settled in and marked `≈` when the total is partial;
 - honest warnings: a degraded holiday calendar, an unreadable balance, messages without token
-  usage, unpriced model ids.
+  usage, unpriced model ids — each with the Refresh button that retries both the payload and the
+  calendar;
 
 ## Requirements
 
@@ -147,6 +150,9 @@ its source disagree — a change to the policy has to reach the browser half.
 
 - The spend is an estimate for the current session only; a request that starts before a boundary
   and settles after it is priced entirely in the window it settled in.
+- The day reason follows the Beijing calendar, which is what the price rule is written on, while the
+  next change is expressed in your local days; the panel labels the row `Day (Beijing)` so a Moscow
+  evening and a Beijing morning cannot be confused.
 - The timeline samples the local day every five minutes, and its quarter labels assume a 24-hour
   day; on a daylight-saving day the marker and the countdown stay exact, but the labels can sit an
   hour off.

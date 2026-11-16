@@ -163,15 +163,24 @@ test('timezone offsets and clock strings are correct', () => {
 
 test('durations split without rounding a minute up', () => {
   assert.deepEqual(durationParts(2 * 3600_000 + 18 * 60_000 + 40_000), {
+    days: 0,
     hours: 2,
     minutes: 18,
     seconds: 40,
     underMinute: false,
   })
   assert.equal(durationParts(59_999).underMinute, true)
-  assert.equal(formatCompact(2 * 3600_000 + 18 * 60_000, 'м'), '2:18')
-  assert.equal(formatCompact(45 * 60_000, 'м'), '45м')
-  assert.equal(formatCompact(30_000, 'м'), '<1м')
+  assert.deepEqual(durationParts(2 * 86400_000 + 15 * 3600_000), {
+    days: 2,
+    hours: 15,
+    minutes: 0,
+    seconds: 0,
+    underMinute: false,
+  })
+  assert.equal(formatCompact(2 * 3600_000 + 18 * 60_000, 'м', 'д'), '2:18')
+  assert.equal(formatCompact(45 * 60_000, 'м', 'д'), '45м')
+  assert.equal(formatCompact(30_000, 'м', 'д'), '<1м')
+  assert.equal(formatCompact(2 * 86400_000 + 3 * 3600_000, 'м', 'д'), '2д')
 })
 
 test('relative days compare local calendar days, not 24-hour spans', () => {

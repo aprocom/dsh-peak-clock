@@ -525,12 +525,13 @@ window.__ModuleLoader__.load({
     /**
      * Split a duration into display parts.
      * @param {number} ms - a non-negative duration.
-     * @returns {{ hours: number, minutes: number, seconds: number, underMinute: boolean }} the parts; minutes and seconds are remainder values.
+     * @returns {{ days: number, hours: number, minutes: number, seconds: number, underMinute: boolean }} the parts; every field except the first is a remainder.
      */
     function durationParts(ms) {
       const total = Math.max(0, Math.floor(ms / 1000))
       return {
-        hours: Math.floor(total / 3600),
+        days: Math.floor(total / 86400),
+        hours: Math.floor((total % 86400) / 3600),
         minutes: Math.floor((total % 3600) / 60),
         seconds: total % 60,
         underMinute: total < 60,
@@ -538,13 +539,16 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Compact countdown for the badge: `2:18` above an hour, `18м` below.
+     * Compact countdown for the badge: `2:18` above an hour, `18м` below, `3д`
+     * above a day.
      * @param {number} ms - a non-negative duration.
-     * @param {string} minuteSuffix - the localized one-letter or short minute suffix.
+     * @param {string} minuteSuffix - the localized short minute suffix.
+     * @param {string} daySuffix - the localized short day suffix.
      * @returns {string} the compact text.
      */
-    function formatCompact(ms, minuteSuffix) {
+    function formatCompact(ms, minuteSuffix, daySuffix) {
       const parts = durationParts(ms)
+      if (parts.days > 0) return `${parts.days}${daySuffix}`
       if (parts.hours > 0) return `${parts.hours}:${pad2(parts.minutes)}`
       if (parts.minutes > 0) return `${parts.minutes}${minuteSuffix}`
       return `<1${minuteSuffix}`
@@ -662,22 +666,24 @@ window.__ModuleLoader__.load({
     const EN = {
       'badge.peak': 'Peak',
       'badge.off': 'Off-peak',
-      'badge.aria': '{state}, {time} until the price changes',
-      'badge.detached': 'DeepSeek schedule does not apply to this model',
+      'badge.aria': 'DeepSeek {state}, {time} until the price changes',
+      'badge.detached': 'DeepSeek’s schedule does not apply to this model',
       'minutesShort': 'm',
+      'daysShort': 'd',
       'state.untilOff': 'until the discount',
       'state.untilPeak': 'until peak',
       'panel.title': 'DeepSeek price clock',
       'panel.close': 'Close',
       'panel.rate.peak': 'full price',
       'panel.rate.off': 'half price',
+      'panel.notApplicable': 'not applicable',
       'panel.next.peak': 'Peak starts {when} at {time}',
-      'panel.next.off': 'Half price applies {when} at {time}',
-      'panel.sections': 'Details',
+      'panel.next.off': 'Half price starts {when} at {time}',
       'time.today': 'today',
       'time.tomorrow': 'tomorrow',
-      'rows.peakHours': 'Peak hours ({zone})',
-      'rows.today': 'Today',
+      'rows.peakHours': 'Peak hours',
+      'rows.policyDay': 'Day (Beijing)',
+      'rows.zone': 'Your zone',
       'rows.beijing': 'Beijing',
       'rows.model': 'Model',
       'rows.updated': 'Prices checked',
@@ -685,7 +691,7 @@ window.__ModuleLoader__.load({
       'reason.weekend': 'weekend',
       'reason.holiday': 'holiday: {name}',
       'reason.workday': 'make-up workday',
-      'holiday.new-year': "New Year's Day",
+      'holiday.new-year': 'New Year\'s Day',
       'holiday.spring-festival': 'Spring Festival',
       'holiday.qingming': 'Qingming Festival',
       'holiday.labour-day': 'Labour Day',
@@ -704,21 +710,27 @@ window.__ModuleLoader__.load({
       'money.balance': 'Balance',
       'money.bonus': 'bonus',
       'money.session': 'This session',
+      'money.sessionIn': 'This session, {currency}',
       'money.requests': '{n} requests',
       'money.loading': 'reading…',
       'money.signedOut': 'not signed in',
       'money.failed': 'unavailable',
       'money.unavailable': 'account service is not mounted',
       'money.noSession': 'no session yet',
+      'money.asOf': 'as of {time}',
+      'money.estimate': '≈ ',
       'model.unknown': 'unknown model',
       'model.notDirect': 'This model is served by {provider}; DeepSeek’s peak schedule does not apply to it.',
-      'model.unknownProvider': 'The provider of this model is unknown, so no spend is attributed to it.',
+      'model.unknownProvider': 'The provider is not known yet, so this session’s spend is not attributed.',
       'warn.holiday': 'The holiday calendar did not load; only weekdays are considered.',
       'warn.finance': 'Balance and spend could not be read.',
       'warn.inexact': 'The total is partial: {n} messages carried no token usage.',
       'warn.unknownModel': 'Unpriced models: {models}',
+      'warn.calendarYears': 'The holiday calendar for {years} is unavailable; weekdays only.',
       'refresh': 'Refresh',
       'duration.hm': '{h} h {m} min',
+      'duration.dh': '{d} d {h} h',
+      'duration.d': '{d} d',
       'duration.h': '{h} h',
       'duration.m': '{m} min',
       'duration.soon': 'under a minute',
@@ -727,22 +739,24 @@ window.__ModuleLoader__.load({
     const RU = {
       'badge.peak': 'Пик',
       'badge.off': 'Вне пика',
-      'badge.aria': '{state}, до смены цены {time}',
+      'badge.aria': 'DeepSeek: {state}, до смены цены {time}',
       'badge.detached': 'Тариф DeepSeek не применяется к этой модели',
       'minutesShort': 'м',
-      'state.untilOff': 'до скидки',
+      'daysShort': 'д',
+      'state.untilOff': 'до половины цены',
       'state.untilPeak': 'до пика',
-      'panel.title': 'Ценовые часы DeepSeek',
+      'panel.title': 'Пиковые часы DeepSeek',
       'panel.close': 'Закрыть',
       'panel.rate.peak': 'полная цена',
       'panel.rate.off': 'половина цены',
+      'panel.notApplicable': 'не применяется',
       'panel.next.peak': 'Пик начнётся {when} в {time}',
       'panel.next.off': 'Половина цены начнётся {when} в {time}',
-      'panel.sections': 'Подробности',
       'time.today': 'сегодня',
       'time.tomorrow': 'завтра',
-      'rows.peakHours': 'Часы пик ({zone})',
-      'rows.today': 'Сегодня',
+      'rows.peakHours': 'Часы пик',
+      'rows.policyDay': 'День (Пекин)',
+      'rows.zone': 'Ваша зона',
       'rows.beijing': 'Пекин',
       'rows.model': 'Модель',
       'rows.updated': 'Цены проверены',
@@ -758,7 +772,7 @@ window.__ModuleLoader__.load({
       'holiday.mid-autumn': 'Праздник середины осени',
       'holiday.national-day': 'День образования КНР',
       'holiday.holiday': 'государственный праздник',
-      'prices.title': 'Цены, {currency} за 1M токенов',
+      'prices.title': 'Цены, {currency} за 1 млн токенов',
       'prices.hit': 'вход · из кэша',
       'prices.miss': 'вход · без кэша',
       'prices.output': 'выход',
@@ -769,21 +783,27 @@ window.__ModuleLoader__.load({
       'money.balance': 'Баланс',
       'money.bonus': 'бонус',
       'money.session': 'Эта сессия',
+      'money.sessionIn': 'Эта сессия, {currency}',
       'money.requests': 'запросов: {n}',
-      'money.loading': 'читаю…',
+      'money.loading': 'загрузка…',
       'money.signedOut': 'нет входа в аккаунт',
-      'money.failed': 'не удалось прочитать',
+      'money.failed': 'не удалось загрузить',
       'money.unavailable': 'сервис аккаунта не подключён',
       'money.noSession': 'сессии пока нет',
+      'money.asOf': 'данные на {time}',
+      'money.estimate': '≈ ',
       'model.unknown': 'неизвестная модель',
-      'model.notDirect': 'Модель обслуживает {provider}; тариф пиковых часов DeepSeek к ней не применяется.',
-      'model.unknownProvider': 'Провайдер модели неизвестен, поэтому расход по ней не показываю.',
+      'model.notDirect': 'Модель обслуживает {provider}; пиковый тариф DeepSeek к ней не применяется.',
+      'model.unknownProvider': 'Провайдер модели ещё не определён, расход по ней не показываю.',
       'warn.holiday': 'Календарь праздников не загрузился — учитываются только будни.',
       'warn.finance': 'Баланс и расход прочитать не удалось.',
-      'warn.inexact': 'Сумма неполная: {n} сообщений без данных о токенах.',
+      'warn.inexact': 'Сумма неполная: сообщений без данных о токенах — {n}.',
       'warn.unknownModel': 'Модели без цены: {models}',
+      'warn.calendarYears': 'Календарь праздников за {years} недоступен — учитываются только будни.',
       'refresh': 'Обновить',
       'duration.hm': '{h} ч {m} мин',
+      'duration.dh': '{d} д {h} ч',
+      'duration.d': '{d} д',
       'duration.h': '{h} ч',
       'duration.m': '{m} мин',
       'duration.soon': 'меньше минуты',
@@ -792,22 +812,24 @@ window.__ModuleLoader__.load({
     const ZH = {
       'badge.peak': '高峰',
       'badge.off': '空闲',
-      'badge.aria': '{state}，距价格变化 {time}',
+      'badge.aria': 'DeepSeek {state}，距价格变化 {time}',
       'badge.detached': '当前模型不适用 DeepSeek 时段价格',
       'minutesShort': '分',
-      'state.untilOff': '距空闲',
+      'daysShort': '天',
+      'state.untilOff': '距半价',
       'state.untilPeak': '距高峰',
       'panel.title': 'DeepSeek 价格时钟',
       'panel.close': '关闭',
       'panel.rate.peak': '全价',
       'panel.rate.off': '半价',
+      'panel.notApplicable': '不适用',
       'panel.next.peak': '高峰将于{when} {time} 开始',
       'panel.next.off': '半价将于{when} {time} 开始',
-      'panel.sections': '详情',
       'time.today': '今天',
       'time.tomorrow': '明天',
-      'rows.peakHours': '高峰时段（{zone}）',
-      'rows.today': '今天',
+      'rows.peakHours': '高峰时段',
+      'rows.policyDay': '日期（北京）',
+      'rows.zone': '所在时区',
       'rows.beijing': '北京',
       'rows.model': '模型',
       'rows.updated': '价格核对',
@@ -834,21 +856,27 @@ window.__ModuleLoader__.load({
       'money.balance': '余额',
       'money.bonus': '赠金',
       'money.session': '本会话',
+      'money.sessionIn': '本会话（{currency}）',
       'money.requests': '{n} 次请求',
       'money.loading': '读取中…',
       'money.signedOut': '未登录',
       'money.failed': '读取失败',
       'money.unavailable': '账户服务未挂载',
       'money.noSession': '暂无会话',
+      'money.asOf': '{time} 时数据',
+      'money.estimate': '≈ ',
       'model.unknown': '未知模型',
       'model.notDirect': '当前模型由 {provider} 提供，不适用 DeepSeek 峰谷价格。',
-      'model.unknownProvider': '当前模型的提供方未知，因此不显示该模型的花费。',
+      'model.unknownProvider': '当前模型的提供方尚未确定，因此不显示该会话花费。',
       'warn.holiday': '节假日日历未加载，仅按工作日判断。',
       'warn.finance': '余额与花费读取失败。',
       'warn.inexact': '合计不完整：{n} 条消息没有 token 用量。',
       'warn.unknownModel': '未定价模型：{models}',
+      'warn.calendarYears': '{years} 年节假日日历不可用，仅按工作日判断。',
       'refresh': '刷新',
       'duration.hm': '{h} 小时 {m} 分',
+      'duration.dh': '{d} 天 {h} 小时',
+      'duration.d': '{d} 天',
       'duration.h': '{h} 小时',
       'duration.m': '{m} 分',
       'duration.soon': '不到一分钟',
@@ -862,37 +890,41 @@ window.__ModuleLoader__.load({
 .dpc-badge:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .dpc-badge:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .dpc-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--dsw-alias-state-warn-primary); }
-.dpc-root[data-phase="off"] .dpc-dot { background: var(--dsw-alias-state-success-primary); }
-.dpc-root[data-detached="true"] .dpc-dot { background: var(--dsw-alias-label-tertiary); }
+.dpc-root[data-phase="off"] .dpc-dot,
+.dpc-panel[data-phase="off"] .dpc-dot { background: var(--dsw-alias-state-success-primary); }
+.dpc-root[data-detached="true"] .dpc-dot,
+.dpc-panel[data-detached="true"] .dpc-dot { background: var(--dsw-alias-label-tertiary); }
 .dpc-time { color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
-.dpc-panel { position: fixed; z-index: 2147483000; box-sizing: border-box; width: 340px; max-height: min(72vh, 560px); overflow: auto; padding: 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 1.45; box-shadow: 0 12px 32px color-mix(in srgb, var(--dsw-alias-label-primary) 18%, transparent); }
+.dpc-panel { position: fixed; z-index: 2147483000; box-sizing: border-box; width: min(340px, calc(100vw - 16px)); max-height: min(72vh, 560px); overflow: auto; padding: 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 1.45; box-shadow: 0 12px 32px color-mix(in srgb, var(--dsw-alias-label-primary) 18%, transparent); }
 .dpc-head { display: flex; align-items: center; gap: 8px; }
 .dpc-state { font-size: 13px; font-weight: 600; }
-.dpc-chip { padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 16%, transparent); color: var(--dsw-alias-state-warn-label); font-size: 11px; }
-.dpc-panel[data-phase="off"] .dpc-chip { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent); color: var(--dsw-alias-state-success-primary); }
+.dpc-chip { padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 22%, transparent); color: var(--dsw-alias-label-primary); font-size: 11px; }
+.dpc-panel[data-phase="off"] .dpc-chip { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 22%, transparent); }
+.dpc-panel[data-detached="true"] .dpc-chip { background: transparent; box-shadow: inset 0 0 0 1px var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); }
 .dpc-close { margin-left: auto; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); font: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
 .dpc-close:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .dpc-count { margin-top: 10px; display: flex; align-items: baseline; gap: 6px; }
 .dpc-count-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.dpc-count-until { color: var(--dsw-alias-label-tertiary); }
-.dpc-track { position: relative; height: 6px; margin-top: 10px; border-radius: 999px; background: var(--dsw-alias-bg-layer-3); overflow: hidden; }
-.dpc-seg { position: absolute; top: 0; bottom: 0; background: var(--dsw-alias-state-warn-secondary); }
+.dpc-count-until { color: var(--dsw-alias-label-secondary); }
+.dpc-track { position: relative; height: 6px; margin-top: 10px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
+.dpc-seg { position: absolute; top: 0; bottom: 0; background: var(--dsw-alias-state-warn-primary); }
 .dpc-now { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--dsw-alias-label-primary); }
-.dpc-ticks { display: flex; justify-content: space-between; margin-top: 3px; color: var(--dsw-alias-label-tertiary); font-size: 10px; font-variant-numeric: tabular-nums; }
+.dpc-ticks { display: flex; justify-content: space-between; margin-top: 3px; color: var(--dsw-alias-label-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .dpc-next { margin-top: 8px; color: var(--dsw-alias-label-secondary); }
 .dpc-sect { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); }
-.dpc-sect-title { color: var(--dsw-alias-label-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.dpc-sect-title { color: var(--dsw-alias-label-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
 .dpc-row { display: flex; gap: 10px; margin-top: 6px; }
-.dpc-row-key { flex: none; min-width: 96px; color: var(--dsw-alias-label-tertiary); }
+.dpc-row-key { flex: none; min-width: 96px; color: var(--dsw-alias-label-secondary); }
 .dpc-row-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .dpc-price-model { margin-top: 8px; display: flex; align-items: baseline; gap: 6px; }
-.dpc-price-model-name { font-weight: 600; font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace); }
+.dpc-price-model-name { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .dpc-price-model-slot { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .dpc-price-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 10px; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .dpc-price-grid > span:nth-child(3n+2), .dpc-price-grid > span:nth-child(3n) { text-align: right; }
 .dpc-price-head { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .dpc-warn { margin-top: 8px; color: var(--dsw-alias-state-warn-label); }
-.dpc-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); display: flex; align-items: center; gap: 8px; color: var(--dsw-alias-label-tertiary); font-size: 11px; }
+.dpc-note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); }
+.dpc-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l1); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; color: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .dpc-refresh { margin-left: auto; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 11px; padding: 2px 7px; cursor: pointer; }
 .dpc-refresh:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .dpc-refresh:disabled { opacity: 0.5; cursor: default; }
@@ -980,6 +1012,20 @@ window.__ModuleLoader__.load({
         }
         for (const listener of calendarListeners) listener()
       })()
+    }
+
+    /**
+     * Drop the cached calendar of a year and load it again. The bundled years
+     * need no retry: they are already exact and offline.
+     * @param {number} year - a four-digit year.
+     * @returns {void}
+     */
+    function retryCalendar(year) {
+      const record = calendarYears.get(year)
+      if (record !== undefined && (record.promise === null || record.promise === undefined)) return
+      calendarYears.delete(year)
+      ensureYear(year)
+      for (const listener of calendarListeners) listener()
     }
 
     /**
@@ -1101,6 +1147,11 @@ window.__ModuleLoader__.load({
     function durationText(t, ms) {
       const parts = durationParts(ms)
       if (parts.underMinute) return t('duration.soon')
+      if (parts.days > 0) {
+        return parts.hours > 0
+          ? t('duration.dh', { d: parts.days, h: parts.hours })
+          : t('duration.d', { d: parts.days })
+      }
       if (parts.hours > 0 && parts.minutes > 0) return t('duration.hm', { h: parts.hours, m: parts.minutes })
       if (parts.hours > 0) return t('duration.h', { h: parts.hours })
       return t('duration.m', { m: parts.minutes })
@@ -1118,6 +1169,23 @@ window.__ModuleLoader__.load({
         return new Intl.DateTimeFormat(locale, { timeZone: zone, day: 'numeric', month: 'short', weekday: 'short' }).format(new Date(ms))
       } catch {
         return formatClock(ms, zone, locale)
+      }
+    }
+
+    /**
+     * A `YYYY-MM-DD` key as a localized date.
+     * @param {string} dateKey - an ISO date.
+     * @param {string} locale - the formatting locale.
+     * @returns {string} the localized date.
+     */
+    function formatIsoDate(dateKey, locale) {
+      const parts = String(dateKey).split('-').map(Number)
+      if (parts.length !== 3 || parts.some((value) => !Number.isFinite(value))) return String(dateKey)
+      try {
+        return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+          .format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)))
+      } catch {
+        return String(dateKey)
       }
     }
 
@@ -1249,9 +1317,10 @@ window.__ModuleLoader__.load({
      */
     function Timeline(snapshot, locale) {
       const { timeline, zone } = snapshot
-      const ticks = [0, 0.25, 0.5, 0.75, 1].map((fraction) =>
+      const ticks = [0, 0.25, 0.5, 0.75].map((fraction) =>
         formatClock(timeline.dayStartMs + fraction * timeline.dayMs, zone, locale))
-      return h('div', { key: 'timeline' }, [
+      ticks.push('24:00')
+      return h('div', { key: 'timeline', 'aria-hidden': 'true' }, [
         h('div', { key: 'track', className: 'dpc-track' }, [
           ...timeline.segments.map((segment, index) => h('span', {
             key: `seg-${index}`,
@@ -1297,22 +1366,30 @@ window.__ModuleLoader__.load({
     /**
      * The detail panel.
      *
+     * The panel always explains the current DeepSeek window. Prices and the
+     * session spend appear only for a route DeepSeek bills itself; the balance
+     * is account-wide, so it appears for every route.
+     *
      * @param {object} props - rendering inputs.
+     * @param {string} props.id - the element id the badge's aria-controls names.
      * @param {object} props.snapshot - the engine state for this second.
      * @param {Function} props.t - the translate function.
      * @param {string} props.locale - the formatting locale.
      * @param {{ model: string | null, provider: string | null }} props.selection - the current model selection.
      * @param {object | null} props.finance - the Host finance payload.
-     * @param {string} props.financeStatus - loading, ready, stale or error.
+     * @param {string} props.financeStatus - loading, refreshing, ready, stale or error.
      * @param {boolean} props.holidayDegraded - whether the calendar fell back to weekdays.
-     * @param {Function} props.onRefresh - manual refresh.
-     * @param {Function} props.onClose - close request.
-     * @param {Function} props.bindOutside - attaches the outside-click listener to the panel element.
+     * @param {Function} props.onRefresh - manual refresh of the finance payload and the calendar.
+     * @param {Function} props.onClose - close request that restores the previous focus.
+     * @param {Function} props.bindOutside - attaches the panel element.
+     * @param {object} props.style - the viewport position.
      * @returns {object} the panel element.
      */
     function Panel(props) {
       const { snapshot, t, locale, selection, finance, financeStatus, holidayDegraded, onRefresh, onClose } = props
       const direct = isDeepSeekRoute(selection.provider)
+      const detached = selection.provider !== null && !direct
+      const unknownProvider = selection.provider === null
       const clock = (ms) => formatClock(ms, snapshot.zone, locale)
 
       const nextWhen = relativeDay(snapshot.next.at, snapshot.now, snapshot.zone)
@@ -1335,29 +1412,35 @@ window.__ModuleLoader__.load({
       }
 
       const scheduleText = snapshot.schedule.map((window) => `${window.startText}–${window.endText}`).join(' · ')
-      const pricing = finance && finance.pricing ? finance.pricing : {
-        currency: PRICING_CURRENCY,
-        updated: PRICING_UPDATED,
-        source: PRICING_SOURCE,
-        models: MODELS.map((model) => ({
-          id: model.id,
-          peak: model.peak,
-          off: {
-            cacheHit: model.peak.cacheHit * OFF_PEAK_MULTIPLIER,
-            cacheMiss: model.peak.cacheMiss * OFF_PEAK_MULTIPLIER,
-            output: model.peak.output * OFF_PEAK_MULTIPLIER,
-          },
-        })),
-      }
+      const pricing = finance && finance.pricing
+        ? finance.pricing
+        : {
+          currency: PRICING_CURRENCY,
+          updated: PRICING_UPDATED,
+          source: PRICING_SOURCE,
+          models: MODELS.map((model) => ({
+            id: model.id,
+            peak: model.peak,
+            off: {
+              cacheHit: model.peak.cacheHit * OFF_PEAK_MULTIPLIER,
+              cacheMiss: model.peak.cacheMiss * OFF_PEAK_MULTIPLIER,
+              output: model.peak.output * OFF_PEAK_MULTIPLIER,
+            },
+          })),
+        }
 
       const rows = [
         h('div', { key: 'hours', className: 'dpc-row' }, [
-          h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.peakHours', { zone: snapshot.zone })),
+          h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.peakHours')),
           h('span', { key: 'v', className: 'dpc-row-value' }, scheduleText),
         ]),
-        h('div', { key: 'today', className: 'dpc-row' }, [
-          h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.today')),
+        h('div', { key: 'day', className: 'dpc-row' }, [
+          h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.policyDay')),
           h('span', { key: 'v', className: 'dpc-row-value' }, reasonText),
+        ]),
+        h('div', { key: 'zone', className: 'dpc-row' }, [
+          h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.zone')),
+          h('span', { key: 'v', className: 'dpc-row-value' }, `${snapshot.zone} · ${snapshot.offsetLabel}`),
         ]),
         h('div', { key: 'beijing', className: 'dpc-row' }, [
           h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.beijing')),
@@ -1367,31 +1450,33 @@ window.__ModuleLoader__.load({
           ? null
           : h('div', { key: 'model', className: 'dpc-row' }, [
             h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.model')),
-            h('span', { key: 'v', className: 'dpc-row-value' }, `${selection.model}${selection.provider === null ? '' : ` · ${selection.provider}`}`),
+            h('span', { key: 'v', className: 'dpc-row-value' }, selection.provider === null ? selection.model : `${selection.model} · ${selection.provider}`),
           ]),
       ]
 
       const balance = finance ? finance.balance : null
-      const spend = finance ? finance.spend : null
-      let balanceText = t('money.loading')
-      if (balance !== null && balance !== undefined) {
-        if (balance.status === 'ready') {
-          const main = formatMoney(balance.amount, balance.currency, 2)
-          balanceText = balance.bonus === null || balance.bonus === undefined
-            ? main
-            : `${main} · ${t('money.bonus')} ${formatMoney(balance.bonus, balance.currency, 2)}`
-        } else if (balance.status === 'signed-out') balanceText = t('money.signedOut')
-        else if (balance.status === 'unavailable') balanceText = t('money.unavailable')
-        else balanceText = t('money.failed')
-      }
+      let balanceText
+      if (financeStatus === 'error' && finance === null) balanceText = t('money.failed')
+      else if (balance === null) balanceText = t('money.loading')
+      else if (balance.status === 'ready') {
+        const main = formatMoney(balance.amount, balance.currency, 2)
+        balanceText = balance.bonus === null || balance.bonus === undefined
+          ? main
+          : `${main} · ${t('money.bonus')} ${formatMoney(balance.bonus, balance.currency, 2)}`
+      } else if (balance.status === 'signed-out') balanceText = t('money.signedOut')
+      else if (balance.status === 'unavailable') balanceText = t('money.unavailable')
+      else balanceText = t('money.failed')
 
-      let spendText = t('money.loading')
-      if (financeStatus === 'error' && finance === null) spendText = t('money.failed')
-      else if (spend !== null && spend !== undefined) {
-        if (spend.status === 'no-session') spendText = t('money.noSession')
+      const spend = finance ? finance.spend : null
+      let spendText = null
+      if (direct) {
+        if (financeStatus === 'error' && finance === null) spendText = t('money.failed')
+        else if (spend === null) spendText = t('money.loading')
+        else if (spend.status === 'no-session') spendText = t('money.noSession')
         else if (spend.status === 'ready') {
-          const digits = spend.total < 0.01 ? 4 : spend.total < 1 ? 4 : 3
-          spendText = `${formatMoney(spend.total, pricing.currency, digits)} · ${t('money.requests', { n: spend.requests })}`
+          const digits = spend.total < 1 ? 4 : 3
+          const prefix = spend.exact ? '' : t('money.estimate')
+          spendText = `${prefix}${formatMoney(spend.total, pricing.currency, digits)} · ${t('money.requests', { n: spend.requests })}`
         } else if (spend.status === 'unavailable') spendText = t('money.unavailable')
         else spendText = t('money.failed')
       }
@@ -1399,50 +1484,62 @@ window.__ModuleLoader__.load({
       const warnings = []
       if (holidayDegraded) warnings.push(t('warn.holiday'))
       if (financeStatus === 'error' || financeStatus === 'stale') warnings.push(t('warn.finance'))
-      if (spend !== null && spend !== undefined && spend.status === 'ready') {
+      if (direct && spend !== null && spend !== undefined && spend.status === 'ready') {
         if (spend.skipped > 0) warnings.push(t('warn.inexact', { n: spend.skipped }))
         if (Array.isArray(spend.unknownModels) && spend.unknownModels.length > 0) {
           warnings.push(t('warn.unknownModel', { models: spend.unknownModels.join(', ') }))
         }
+        if (Array.isArray(spend.degradedYears) && spend.degradedYears.length > 0) {
+          warnings.push(t('warn.calendarYears', { years: spend.degradedYears.join(', ') }))
+        }
       }
 
-      const detachedNote = selection.provider !== null && !direct
-        ? h('div', { key: 'detached', className: 'dpc-sect' }, [
-          h('div', { key: 'title', className: 'dpc-sect-title' }, t('panel.sections')),
-          h('div', { key: 'text', className: 'dpc-warn' }, t('model.notDirect', { provider: selection.provider })),
+      const note = detached
+        ? h('div', { key: 'detached', className: 'dpc-note' }, t('model.notDirect', { provider: selection.provider }))
+        : unknownProvider
+          ? h('div', { key: 'unknown-provider', className: 'dpc-note' }, t('model.unknownProvider'))
+          : null
+
+      const clockSection = detached
+        ? null
+        : h('div', { key: 'clock' }, [
+          h('div', { key: 'count', className: 'dpc-count' }, [
+            h('span', { key: 'value', className: 'dpc-count-value' }, durationText(t, snapshot.remainingMs)),
+            h('span', { key: 'until', className: 'dpc-count-until' }, snapshot.phase === 'peak' ? t('state.untilOff') : t('state.untilPeak')),
+          ]),
+          Timeline(snapshot, locale),
+          h('div', { key: 'next', className: 'dpc-next' }, nextLine),
         ])
-        : null
 
-      const unknownNote = selection.provider === null
-        ? h('div', { key: 'unknown-provider', className: 'dpc-sect' },
-          h('div', { key: 'text', className: 'dpc-warn' }, t('model.unknownProvider')))
-        : null
-
-      const priceSection = direct || selection.provider === null
-        ? h('div', { key: 'prices', className: 'dpc-sect' }, [
+      const priceSection = detached
+        ? null
+        : h('div', { key: 'prices', className: 'dpc-sect' }, [
           h('div', { key: 'title', className: 'dpc-sect-title' }, t('prices.title', { currency: pricing.currency })),
           ...pricing.models.map((model) => PriceBlock({ model, t })),
         ])
-        : null
 
-      const moneySection = direct
-        ? h('div', { key: 'money', className: 'dpc-sect' }, [
-          h('div', { key: 'title', className: 'dpc-sect-title' }, t('money.title')),
-          h('div', { key: 'balance', className: 'dpc-row' }, [
-            h('span', { key: 'k', className: 'dpc-row-key' }, t('money.balance')),
-            h('span', { key: 'v', className: 'dpc-row-value' }, balanceText),
-          ]),
-          h('div', { key: 'session', className: 'dpc-row' }, [
-            h('span', { key: 'k', className: 'dpc-row-key' }, t('money.session')),
+      const moneySection = h('div', { key: 'money', className: 'dpc-sect' }, [
+        h('div', { key: 'title', className: 'dpc-sect-title' }, t('money.title')),
+        h('div', { key: 'balance', className: 'dpc-row' }, [
+          h('span', { key: 'k', className: 'dpc-row-key' }, t('money.balance')),
+          h('span', { key: 'v', className: 'dpc-row-value' }, balanceText),
+        ]),
+        spendText === null
+          ? null
+          : h('div', { key: 'session', className: 'dpc-row' }, [
+            h('span', { key: 'k', className: 'dpc-row-key' }, t('money.sessionIn', { currency: pricing.currency })),
             h('span', { key: 'v', className: 'dpc-row-value' }, spendText),
           ]),
-        ])
-        : null
+      ])
 
       const warningsSection = warnings.length === 0
         ? null
         : h('div', { key: 'warnings', className: 'dpc-sect' },
           warnings.map((warning, index) => h('div', { key: `fw-${index}`, className: 'dpc-warn' }, warning)))
+
+      const asOf = finance && typeof finance.fetchedAt === 'string'
+        ? t('money.asOf', { time: clock(Date.parse(finance.fetchedAt)) })
+        : null
 
       return h('div', {
         ref: props.bindOutside,
@@ -1450,6 +1547,7 @@ window.__ModuleLoader__.load({
         id: props.id,
         tabIndex: -1,
         'data-phase': snapshot.phase,
+        'data-detached': detached ? 'true' : 'false',
         role: 'dialog',
         'aria-modal': 'false',
         'aria-label': t('panel.title'),
@@ -1458,7 +1556,9 @@ window.__ModuleLoader__.load({
         h('div', { key: 'head', className: 'dpc-head' }, [
           h('span', { key: 'dot', className: 'dpc-dot', 'aria-hidden': 'true' }),
           h('span', { key: 'state', className: 'dpc-state' }, snapshot.phase === 'peak' ? t('badge.peak') : t('badge.off')),
-          h('span', { key: 'chip', className: 'dpc-chip' }, snapshot.phase === 'peak' ? t('panel.rate.peak') : t('panel.rate.off')),
+          h('span', { key: 'chip', className: 'dpc-chip' }, detached
+            ? t('panel.notApplicable')
+            : snapshot.phase === 'peak' ? t('panel.rate.peak') : t('panel.rate.off')),
           h('button', {
             key: 'close',
             type: 'button',
@@ -1468,20 +1568,14 @@ window.__ModuleLoader__.load({
             onClick: onClose,
           }, '×'),
         ]),
-        h('div', { key: 'count', className: 'dpc-count' }, [
-          h('span', { key: 'value', className: 'dpc-count-value' }, durationText(t, snapshot.remainingMs)),
-          h('span', { key: 'until', className: 'dpc-count-until' }, snapshot.phase === 'peak' ? t('state.untilOff') : t('state.untilPeak')),
-        ]),
-        Timeline(snapshot, locale),
-        h('div', { key: 'next', className: 'dpc-next' }, nextLine),
+        note,
+        clockSection,
         h('div', { key: 'rows', className: 'dpc-sect' }, rows),
-        detachedNote,
-        unknownNote,
         priceSection,
         moneySection,
         warningsSection,
         h('div', { key: 'foot', className: 'dpc-foot' }, [
-          h('span', { key: 'updated' }, `${t('rows.updated')}: ${pricing.updated}`),
+          h('span', { key: 'updated' }, `${t('rows.updated')}: ${formatIsoDate(pricing.updated, locale)}`),
           h('a', {
             key: 'source',
             className: 'dpc-link',
@@ -1489,6 +1583,7 @@ window.__ModuleLoader__.load({
             target: '_blank',
             rel: 'noreferrer',
           }, t('prices.source')),
+          asOf === null ? null : h('span', { key: 'as-of' }, asOf),
           h('button', {
             key: 'refresh',
             type: 'button',
@@ -1499,8 +1594,6 @@ window.__ModuleLoader__.load({
         ]),
       ])
     }
-
-    // ─── Badge ──────────────────────────────────────────────────────────────
 
     /**
      * Place the panel under the badge, flipping above it and clamping to the
@@ -1531,6 +1624,16 @@ window.__ModuleLoader__.load({
      * @param {object} props - slot props plus the injected services.
      * @returns {object | null} the badge element.
      */
+    /**
+     * The composer badge and its panel.
+     *
+     * A mouse click keeps the caret where it was; a keyboard activation moves
+     * focus into the panel. Closing returns focus to whatever had it before the
+     * panel opened, so typing can continue.
+     *
+     * @param {object} props - slot props plus the injected context.
+     * @returns {object} the badge element.
+     */
     function PeakClockBadge(props) {
       const { ctx } = props
       const localeSnapshot = useLocaleSnapshot(ctx)
@@ -1551,34 +1654,53 @@ window.__ModuleLoader__.load({
         [now, calendar, zone, locale],
       )
       const sessionId = props.sessionId === undefined ? null : String(props.sessionId)
-      const finance = useFinance({ sessionId, active: open && direct, language, revision })
+      // The balance is account-wide, so the panel reads it for every provider;
+      // the spend row appears only for a route DeepSeek bills itself.
+      const finance = useFinance({ sessionId, active: open, language, revision })
 
       const buttonRef = React.useRef(null)
       const panelRef = React.useRef(null)
+      const focusPanelRef = React.useRef(false)
       const focusedRef = React.useRef(false)
+      const returnFocusRef = React.useRef(null)
       const panelId = typeof React.useId === 'function' ? React.useId() : 'peak-clock-panel'
       const [position, setPosition] = React.useState(null)
 
-      const close = React.useCallback(() => setOpen(false), [])
+      const close = React.useCallback((restoreFocus) => {
+        setOpen(false)
+        if (restoreFocus !== true) return
+        const target = returnFocusRef.current
+        if (target !== null && target !== undefined && target.isConnected && typeof target.focus === 'function') {
+          target.focus({ preventScroll: true })
+        } else if (buttonRef.current !== null) {
+          buttonRef.current.focus()
+        }
+      }, [])
 
-      // Outside click closes the panel; a click on the badge is not "outside"
-      // because the badge toggles on its own.
+      const toggle = React.useCallback((event) => {
+        returnFocusRef.current = document.activeElement
+        focusPanelRef.current = event !== undefined && event.detail === 0
+        focusedRef.current = false
+        setOpen((value) => !value)
+      }, [])
+
+      // A pointer click outside closes without moving focus: the click already
+      // put focus where the user pointed.
       React.useEffect(() => {
         if (!open) return undefined
         const onPointerDown = (event) => {
           const target = event.target
           if (panelRef.current !== null && target instanceof Node && panelRef.current.contains(target)) return
           if (buttonRef.current !== null && target instanceof Node && buttonRef.current.contains(target)) return
-          setOpen(false)
+          close(false)
         }
         document.addEventListener('pointerdown', onPointerDown, true)
         return () => document.removeEventListener('pointerdown', onPointerDown, true)
-      }, [open])
+      }, [open, close])
 
       React.useEffect(() => {
         if (!open) {
           setPosition(null)
-          focusedRef.current = false
           return undefined
         }
         const update = () => setPosition(placePanel(buttonRef.current, 340))
@@ -1591,13 +1713,13 @@ window.__ModuleLoader__.load({
         }
       }, [open])
 
-      // Focus the panel once per opening, and pull it back into the viewport
-      // after it grows: the price table and the money rows arrive later.
+      // Move focus in only for a keyboard opening, and pull the panel back into
+      // the viewport after it grows: the price table arrives before the money.
       React.useLayoutEffect(() => {
         if (!open || position === null) return
         const node = panelRef.current
         if (node === null) return
-        if (!focusedRef.current && typeof node.focus === 'function') {
+        if (focusPanelRef.current && !focusedRef.current && typeof node.focus === 'function') {
           node.focus({ preventScroll: true })
           focusedRef.current = true
         }
@@ -1614,25 +1736,23 @@ window.__ModuleLoader__.load({
         if (!open) return undefined
         const onKeyDown = (event) => {
           if (event.key !== 'Escape') return
-          setOpen(false)
-          if (buttonRef.current !== null) buttonRef.current.focus()
+          close(true)
         }
         document.addEventListener('keydown', onKeyDown)
         return () => document.removeEventListener('keydown', onKeyDown)
-      }, [open])
-
-      // A model switch away from DeepSeek closes a panel that described a bill
-      // the session no longer pays; the schedule stays available from the badge.
-      React.useEffect(() => {
-        if (detached) setOpen(false)
-      }, [detached])
+      }, [open, close])
 
       const stateLabel = snapshot.phase === 'peak' ? t('badge.peak') : t('badge.off')
-      const compact = formatCompact(snapshot.remainingMs, t('minutesShort'))
+      const compact = formatCompact(snapshot.remainingMs, t('minutesShort'), t('daysShort'))
       const aria = detached
         ? t('badge.detached')
         : t('badge.aria', { state: stateLabel, time: compact })
       const title = detached ? t('badge.detached') : `${stateLabel} · ${durationText(t, snapshot.remainingMs)}`
+
+      const refreshAll = React.useCallback(() => {
+        setRevision((value) => value + 1)
+        retryCalendar(year)
+      }, [year])
 
       const panelNode = open && position !== null
         ? Panel({
@@ -1644,9 +1764,11 @@ window.__ModuleLoader__.load({
           finance: finance.data,
           financeStatus: finance.status,
           holidayDegraded: calendar.degraded,
-          onRefresh: () => setRevision((value) => value + 1),
-          onClose: close,
-          bindOutside: (node) => { panelRef.current = node },
+          onRefresh: refreshAll,
+          onClose: () => close(true),
+          bindOutside: (node) => {
+            panelRef.current = node
+          },
           style: { left: position.left, top: position.top },
         })
         : null
@@ -1668,7 +1790,7 @@ window.__ModuleLoader__.load({
           'aria-haspopup': 'dialog',
           'aria-controls': open ? panelId : undefined,
           'aria-expanded': open ? 'true' : 'false',
-          onClick: () => setOpen((value) => !value),
+          onClick: toggle,
         }, [
           h('span', { key: 'dot', className: 'dpc-dot', 'aria-hidden': 'true' }),
           h('span', { key: 'label' }, detached ? '—' : stateLabel),

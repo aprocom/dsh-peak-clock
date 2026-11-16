@@ -161,6 +161,8 @@ test('durations go through the dictionaries', () => {
   const t = (key, params) => (params ? `${key}:${JSON.stringify(params)}` : key)
   assert.equal(internals.durationText(t, 2 * 3600_000 + 18 * 60_000), 'duration.hm:{"h":2,"m":18}')
   assert.equal(internals.durationText(t, 45 * 60_000), 'duration.m:{"m":45}')
+  assert.equal(internals.durationText(t, 2 * 86400_000 + 15 * 3600_000), 'duration.dh:{"d":2,"h":15}')
+  assert.equal(internals.durationText(t, 3 * 86400_000), 'duration.d:{"d":3}')
   assert.equal(internals.durationText(t, 30_000), 'duration.soon')
 })
 
@@ -191,6 +193,7 @@ test('a direct DeepSeek route shows the schedule, the prices and the money', () 
   assert.ok(content.includes('prices.title'))
   assert.ok(content.includes('money.title'))
   assert.ok(content.includes('money.balance'))
+  assert.ok(content.includes('money.sessionIn'))
   assert.equal(content.includes('model.notDirect'), false)
   assert.ok(content.includes('badge.peak'))
   assert.ok(content.includes('rows.peakHours'))
@@ -213,7 +216,9 @@ test('another provider gets an explanation instead of a DeepSeek claim', () => {
   })
   const content = texts(panel)
   assert.ok(content.includes('model.notDirect'))
-  assert.equal(content.includes('money.title'), false)
+  // The balance is account-wide and stays; the prices and the spend do not.
+  assert.ok(content.includes('money.title'))
+  assert.equal(content.includes('money.sessionIn'), false)
   assert.equal(content.includes('prices.title'), false)
 })
 
@@ -236,7 +241,9 @@ test('an unknown provider shows the table but attributes no spend', () => {
   assert.ok(content.includes('model.unknownProvider'))
   assert.ok(content.includes('warn.holiday'))
   assert.ok(content.includes('prices.title'))
-  assert.equal(content.includes('money.title'), false)
+  assert.ok(content.includes('money.title'))
+  // No spend is attributed while the provider is unknown.
+  assert.equal(content.includes('money.sessionIn'), false)
 })
 
 test('a ready finance payload renders the balance and the spend', () => {

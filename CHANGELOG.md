@@ -12,6 +12,11 @@ First version.
   chain for later years and an explicit degraded state.
 - Per-message spend priced at the settlement time with the request's own model, plus an unreadable
   and partial-total contract (`skipped`, `unknownModels`, `exact`).
-- Dictionaries in English, Russian and Chinese; `Intl` formatting follows the active UI language.
+- Dictionaries in English, Russian and Chinese; `Intl` formatting follows the active UI language,
+  including durations above a day and the localized price-check date.
+- The balance is account-wide and shown for every provider; the spend and the price table appear
+  only for DeepSeek's direct routes, and the policy day is labelled as Beijing's.
+- Keyboard opening moves focus into the panel, closing restores the previous focus, and Refresh
+  retries the finance payload and a failed holiday calendar together.
 - Tests: engine boundaries, weekend and holiday carry, timeline, price table, Host routes and
   guards, client bundle wiring, generated-block parity, packaging.
