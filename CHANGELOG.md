@@ -12,6 +12,9 @@ Polish pass on the badge and the panel.
   session spend stay above the fold.
 - The model row stacks the provider under the model instead of joining them with a separator that
   wrapped mid-token in the composer.
+- Ready for publication: one-image detail documents in English, Russian and Chinese over a
+  text-free preview, `docs` in the packaged files, `engines.dsh` narrowed to `^0.2.1-rc.1`, and a
+  release section in the README.
 
 ## 0.1.0 — 2026-11-16
 

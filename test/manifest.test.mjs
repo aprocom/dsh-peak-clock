@@ -86,8 +86,23 @@ test('the display metadata describes the plugin in every locale', () => {
     assert.equal(typeof meta.description, 'string', `${language} description`)
     assert.ok(meta.title.length >= 3, `${language} title length`)
     assert.ok(meta.description.length > 120, `${language} description length`)
-    assert.equal(meta.detail, undefined, 'no detail document to keep in sync')
+    // The detail document is one feature image and nothing else; its path is
+    // package-relative so the Plugins page can serve it from the package.
+    assert.match(meta.detail, /^docs\/DETAIL(\.[a-z]{2})?\.md$/, `${language} detail path`)
+    assert.ok(exists(meta.detail), `${meta.detail} exists`)
+    const lines = read(meta.detail).trim().split('\n').filter((line) => line !== '')
+    assert.equal(lines.length, 1, `${meta.detail} is a single line`)
+    const image = lines[0].match(/^!\[([^\]]+)\]\(([^)]+)\)$/)
+    assert.ok(image, `${meta.detail} is one image`)
+    assert.ok(image[1].length > 20, `${meta.detail} alternative text`)
+    assert.ok(exists(`docs/${image[2]}`), `${image[2]} exists`)
   }
+  const preview = read('docs/preview.svg')
+  assert.match(preview, /^<svg[^>]+width="640" height="300" viewBox="0 0 640 300"/)
+  assert.equal(preview.includes('<text'), false)
+  assert.equal(preview.includes('<script'), false)
+  assert.equal(preview.includes('foreignObject'), false)
+  assert.equal(/url\(/.test(preview), false)
 })
 
 test('the icon is one small self-contained SVG', () => {

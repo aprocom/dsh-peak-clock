@@ -48,23 +48,33 @@ The detail panel is a card portalled to the page body, so it is never clipped by
 
 ## Install
 
-From GitHub (once published to a repository):
+From the npm registry:
+
+```sh
+dsh plugin --profile desktop add dsh-peak-clock
+```
+
+From the Git repository, when you want the latest commit rather than a release:
 
 ```sh
 dsh plugin --profile desktop add github:<owner>/dsh-peak-clock
 ```
 
-From a checkout:
+From a checkout you already have:
 
 ```sh
-git clone <repository> dsh-peak-clock
 dsh plugin --profile desktop add /absolute/path/to/dsh-peak-clock
 ```
 
-Or open **Plugins** in the sidebar, choose **Add plugin**, and install the package directory. Then
-reload the window (`Cmd+R` / `Ctrl+R`): the browser half is loaded lazily.
+Or open **Plugins** in the sidebar, choose **Add plugin**, and paste either `dsh-peak-clock` (npm)
+or the absolute package directory. Then reload the window (`Cmd+R` / `Ctrl+R`): the browser half is
+loaded lazily.
 
 Remove it with `dsh plugin --profile desktop remove dsh-peak-clock`.
+
+A registry install is the only form that gets **Update** in the Plugins page: Plugin Manager reads
+the published version list for it. A Git install updates only when the dependency is pinned to a
+full 40-character commit, which `add github:…` does not do, so prefer npm for anything but testing.
 
 ## How it decides
 
@@ -146,8 +156,39 @@ Layout:
 | `scripts/sync-client.mjs` | Copies engine, rules and calendar into `client.js` |
 
 `client.js` cannot import the Host modules: the loader serves only the package's `./client`
-export. The copies are therefore generated, and `test/engine-sync.test.mjs` fails when a copy and
-its source disagree — a change to the policy has to reach the browser half.
+export. The copies are therefore generated, and `test/client.test.mjs` fails when a copy and its
+source disagree — a change to the policy has to reach the browser half.
+
+## Publishing a release
+
+The package is an ordinary npm package with no build step: `npm publish` ships exactly what
+`package.json` `files` lists (`npm pack --dry-run` prints the list, and the manifest test asserts
+every entry exists). The release sequence:
+
+```sh
+node --test                      # 61 tests, no dependencies
+node scripts/sync-client.mjs     # in case lib/* changed; the test above already fails on drift
+npm publish                      # unscoped, so public by default; add --access public if scoped
+git tag v0.1.1 && git push --tags
+gh release create v0.1.1 --generate-notes
+```
+
+Before the first publish, fill in `repository`, `homepage` and `bugs` in `package.json`:
+
+```sh
+npm pkg set repository.type=git \
+  repository.url=git+https://github.com/<owner>/dsh-peak-clock.git \
+  homepage=https://github.com/<owner>/dsh-peak-clock#readme \
+  bugs.url=https://github.com/<owner>/dsh-peak-clock/issues
+```
+
+The Plugins page reads the long description from `locale/<lang>.json` `meta.detail` and shows
+`docs/DETAIL*.md` — one image line over `docs/preview.svg`. Both are packaged; keep them in `files`.
+
+Version policy: `engines.dsh` is `^0.2.1-rc.1`, so a release declares the DSH line it was tested
+against. Widen it only after checking the slot and service APIs against the newer release, and
+bump the version in `package.json` and at the top of `CHANGELOG.md` together (the manifest test
+compares them).
 
 ## Known limitations
 
