@@ -57,7 +57,7 @@ dsh plugin --profile desktop add dsh-peak-clock
 From the Git repository, when you want the latest commit rather than a release:
 
 ```sh
-dsh plugin --profile desktop add github:<owner>/dsh-peak-clock
+dsh plugin --profile desktop add github:aprocom/dsh-peak-clock
 ```
 
 From a checkout you already have:
@@ -173,14 +173,9 @@ git tag v0.1.1 && git push --tags
 gh release create v0.1.1 --generate-notes
 ```
 
-Before the first publish, fill in `repository`, `homepage` and `bugs` in `package.json`:
-
-```sh
-npm pkg set repository.type=git \
-  repository.url=git+https://github.com/<owner>/dsh-peak-clock.git \
-  homepage=https://github.com/<owner>/dsh-peak-clock#readme \
-  bugs.url=https://github.com/<owner>/dsh-peak-clock/issues
-```
+`repository`, `homepage` and `bugs` in `package.json` already point at
+[github.com/aprocom/dsh-peak-clock](https://github.com/aprocom/dsh-peak-clock); keep them in step if
+the package is ever moved.
 
 The Plugins page reads the long description from `locale/<lang>.json` `meta.detail` and shows
 `docs/DETAIL*.md` — one image line over `docs/preview.svg`. Both are packaged; keep them in `files`.

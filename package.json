@@ -55,5 +55,13 @@
     "balance",
     "spend"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aprocom/dsh-peak-clock.git"
+  },
+  "homepage": "https://github.com/aprocom/dsh-peak-clock#readme",
+  "bugs": {
+    "url": "https://github.com/aprocom/dsh-peak-clock/issues"
+  }
 }
