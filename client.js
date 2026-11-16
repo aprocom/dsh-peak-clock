@@ -1219,7 +1219,11 @@ window.__ModuleLoader__.load({
 
       const directory = React.useMemo(() => {
         if (sessionId === undefined || sessionId === null) return null
-        const service = ctx.modelDirectories
+        // `ctx.get` is the optional-service accessor: reading `ctx.modelDirectories`
+        // directly throws in Cordis unless the plugin declares the service in
+        // `inject`, and this badge must keep working in compositions without the
+        // model selector.
+        const service = typeof ctx.get === 'function' ? ctx.get('modelDirectories') : null
         if (service === undefined || service === null || typeof service.directoryFor !== 'function') return null
         try {
           const found = service.directoryFor(sessionId)

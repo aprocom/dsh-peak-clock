@@ -272,6 +272,22 @@ test('a ready finance payload renders the balance and the spend', () => {
   assert.ok(content.some((text) => text.includes('money.requests')))
 })
 
+/**
+ * A model-directory service for one provider.
+ * @param {string | null} provider - the selected provider id.
+ * @returns {object} the service face.
+ */
+function directoryService(provider) {
+  return {
+    directoryFor: () => ({
+      store: {
+        subscribe: () => () => {},
+        getSnapshot: () => ({ current: provider === null ? null : { provider, model: 'deepseek-flash' } }),
+      },
+    }),
+  }
+}
+
 test('the badge renders inside the composer row for a direct route', () => {
   const ctx = {
     locale: {
@@ -280,14 +296,7 @@ test('the badge renders inside the composer row for a direct route', () => {
       subscribe: () => () => {},
       getSnapshot: () => ({ active: 'ru' }),
     },
-    modelDirectories: {
-      directoryFor: () => ({
-        store: {
-          subscribe: () => () => {},
-          getSnapshot: () => ({ current: { provider: 'deepseek-account', model: 'deepseek-flash' } }),
-        },
-      }),
-    },
+    get: (name) => (name === 'modelDirectories' ? directoryService('deepseek-account') : null),
   }
   const Badge = internals.PeakClockBadge
   const element = Badge({ ctx, sessionId: 'session-1', useProjection: () => undefined, t: identity })
@@ -310,18 +319,34 @@ test('the badge marks a third-party route instead of claiming a DeepSeek window'
       subscribe: () => () => {},
       getSnapshot: () => ({ active: 'ru' }),
     },
-    modelDirectories: {
-      directoryFor: () => ({
-        store: {
-          subscribe: () => () => {},
-          getSnapshot: () => ({ current: { provider: 'openrouter', model: 'deepseek-flash' } }),
-        },
-      }),
-    },
+    get: (name) => (name === 'modelDirectories' ? directoryService('openrouter') : null),
   }
   const element = internals.PeakClockBadge({ ctx, sessionId: 'session-2', useProjection: () => undefined, t: identity })
   assert.equal(element.props['data-detached'], 'true')
   assert.ok(texts(element).includes('—'))
+})
+
+test('an undeclared model-directory service is read through ctx.get, never directly', () => {
+  // Cordis throws on `ctx.modelDirectories` when the plugin did not declare it
+  // in `inject`; this getter reproduces that failure the badge hit in the app.
+  const ctx = {
+    get: (name) => (name === 'modelDirectories' ? directoryService('deepseek-account') : null),
+    locale: {
+      register: () => () => {},
+      bind: () => (key) => key,
+      subscribe: () => () => {},
+      getSnapshot: () => ({ active: 'ru' }),
+    },
+  }
+  Object.defineProperty(ctx, 'modelDirectories', {
+    configurable: true,
+    get() {
+      throw new Error('cannot get property "modelDirectories" without inject')
+    },
+  })
+  const element = internals.PeakClockBadge({ ctx, sessionId: 'session-3', useProjection: () => undefined, t: identity })
+  assert.equal(element.type, 'div')
+  assert.equal(element.props['data-detached'], 'false')
 })
 
 test('placePanel keeps the card inside the viewport', () => {
