@@ -177,10 +177,14 @@ test('durations split without rounding a minute up', () => {
     seconds: 0,
     underMinute: false,
   })
-  assert.equal(formatCompact(2 * 3600_000 + 18 * 60_000, 'м', 'д'), '2:18')
-  assert.equal(formatCompact(45 * 60_000, 'м', 'д'), '45м')
-  assert.equal(formatCompact(30_000, 'м', 'д'), '<1м')
-  assert.equal(formatCompact(2 * 86400_000 + 3 * 3600_000, 'м', 'д'), '2д')
+  // Above an hour the badge rounds to minutes, below it to seconds.
+  assert.equal(formatCompact(2 * 3600_000 + 18 * 60_000, 'д'), '2:18')
+  assert.equal(formatCompact(2 * 3600_000 + 18 * 60_000 + 42_000, 'д'), '2:18')
+  assert.equal(formatCompact(45 * 60_000 + 5_000, 'д'), '45:05')
+  assert.equal(formatCompact(59 * 60_000 + 59_000, 'д'), '59:59')
+  assert.equal(formatCompact(30_000, 'д'), '0:30')
+  assert.equal(formatCompact(0, 'д'), '0:00')
+  assert.equal(formatCompact(2 * 86400_000 + 3 * 3600_000, 'д'), '2д')
 })
 
 test('relative days compare local calendar days, not 24-hour spans', () => {

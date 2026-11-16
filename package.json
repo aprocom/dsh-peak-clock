@@ -1,6 +1,6 @@
 {
   "name": "dsh-peak-clock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek peak and off-peak pricing clock for DeepSeek Harness: a composer badge with the time left in the current window, a local-day timeline, the published price table, the Platform balance and the session's spend.",
   "type": "module",
   "main": "index.js",

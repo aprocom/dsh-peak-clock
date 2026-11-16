@@ -16,18 +16,21 @@ Community plugin, not an official DeepSeek product.
 
 A badge in the composer tool row, just left of the model selector:
 
-- a state dot (amber for peak, green for off-peak), the state name and the time left;
+- a state dot (amber for peak, green for off-peak), the state name and the time left — `2:18`
+  above an hour, `18:05` with seconds in the last hour, `3д` above a day;
 - a click opens the detail panel.
 
 The detail panel is a card portalled to the page body, so it is never clipped by the composer:
 
 - **countdown** to the exact moment the price changes, with the rate chip (`full price` / `half price`);
-- **local-day timeline**: your own day from 00:00 to 24:00, every peak stretch in amber, a marker for now;
+- **local-day timeline**: your own day from 00:00 to 24:00, every peak stretch in amber, a marker for
+  now labelled with the local time it stands for;
 - **next change**: `Peak starts today at 04:00` — with `tomorrow` or a date when it is not today;
 - **peak hours in your timezone**, your zone with its UTC offset, the policy day in Beijing (weekday,
   weekend, or the holiday name), and the time in Beijing;
-- **price table**: cache-hit input, cache-miss input and output for `deepseek-flash` and
-  `deepseek-v4-pro`, peak and off-peak, in USD per 1M tokens, with the date it was checked;
+- **price table**, folded away until you ask for it: cache-hit input, cache-miss input and output
+  for `deepseek-flash` and `deepseek-v4-pro`, peak and off-peak, in USD per 1M tokens, with the
+  date it was checked;
 - **money**: the Platform balance (recharge and bonus wallets, shown for any provider because it is
   account-wide) and, for a DeepSeek route, this session's spend in USD, priced message by message at
   the window each request settled in and marked `≈` when the total is partial;

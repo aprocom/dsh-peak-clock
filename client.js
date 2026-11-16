@@ -539,19 +539,22 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Compact countdown for the badge: `2:18` above an hour, `18м` below, `3д`
-     * above a day.
+     * Compact countdown for the badge: `2:18` above an hour (`h:mm`), `18:05`
+     * below it (`mm:ss`), `3д` above a day.
+     *
+     * The two colon shapes cannot be confused by their range: the hours field is
+     * never below 1 and the minutes field is never above 59, so the switch into
+     * the `mm:ss` shape is visible the moment the countdown crosses the hour.
+     *
      * @param {number} ms - a non-negative duration.
-     * @param {string} minuteSuffix - the localized short minute suffix.
      * @param {string} daySuffix - the localized short day suffix.
      * @returns {string} the compact text.
      */
-    function formatCompact(ms, minuteSuffix, daySuffix) {
+    function formatCompact(ms, daySuffix) {
       const parts = durationParts(ms)
       if (parts.days > 0) return `${parts.days}${daySuffix}`
       if (parts.hours > 0) return `${parts.hours}:${pad2(parts.minutes)}`
-      if (parts.minutes > 0) return `${parts.minutes}${minuteSuffix}`
-      return `<1${minuteSuffix}`
+      return `${parts.minutes}:${pad2(parts.seconds)}`
     }
 
     /**
@@ -668,7 +671,6 @@ window.__ModuleLoader__.load({
       'badge.off': 'Off-peak',
       'badge.aria': 'DeepSeek {state}, {time} until the price changes',
       'badge.detached': 'DeepSeek’s schedule does not apply to this model',
-      'minutesShort': 'm',
       'daysShort': 'd',
       'state.untilOff': 'until the discount',
       'state.untilPeak': 'until peak',
@@ -732,8 +734,9 @@ window.__ModuleLoader__.load({
       'duration.dh': '{d} d {h} h',
       'duration.d': '{d} d',
       'duration.h': '{h} h',
-      'duration.m': '{m} min',
-      'duration.soon': 'under a minute',
+      'duration.ms': '{m} min {s} s',
+      'duration.s': '{s} s',
+      'duration.soon': 'under a second',
     }
 
     const RU = {
@@ -741,7 +744,6 @@ window.__ModuleLoader__.load({
       'badge.off': 'Вне пика',
       'badge.aria': 'DeepSeek: {state}, до смены цены {time}',
       'badge.detached': 'Тариф DeepSeek не применяется к этой модели',
-      'minutesShort': 'м',
       'daysShort': 'д',
       'state.untilOff': 'до половины цены',
       'state.untilPeak': 'до пика',
@@ -805,8 +807,9 @@ window.__ModuleLoader__.load({
       'duration.dh': '{d} д {h} ч',
       'duration.d': '{d} д',
       'duration.h': '{h} ч',
-      'duration.m': '{m} мин',
-      'duration.soon': 'меньше минуты',
+      'duration.ms': '{m} мин {s} с',
+      'duration.s': '{s} с',
+      'duration.soon': 'меньше секунды',
     }
 
     const ZH = {
@@ -814,7 +817,6 @@ window.__ModuleLoader__.load({
       'badge.off': '空闲',
       'badge.aria': 'DeepSeek {state}，距价格变化 {time}',
       'badge.detached': '当前模型不适用 DeepSeek 时段价格',
-      'minutesShort': '分',
       'daysShort': '天',
       'state.untilOff': '距半价',
       'state.untilPeak': '距高峰',
@@ -878,8 +880,9 @@ window.__ModuleLoader__.load({
       'duration.dh': '{d} 天 {h} 小时',
       'duration.d': '{d} 天',
       'duration.h': '{h} 小时',
-      'duration.m': '{m} 分',
-      'duration.soon': '不到一分钟',
+      'duration.ms': '{m} 分 {s} 秒',
+      'duration.s': '{s} 秒',
+      'duration.soon': '不到一秒',
     }
 
     // ─── Styles ─────────────────────────────────────────────────────────────
@@ -906,7 +909,11 @@ window.__ModuleLoader__.load({
 .dpc-count { margin-top: 10px; display: flex; align-items: baseline; gap: 6px; }
 .dpc-count-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .dpc-count-until { color: var(--dsw-alias-label-secondary); }
-.dpc-track { position: relative; height: 6px; margin-top: 10px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
+.dpc-band { position: relative; margin-top: 18px; }
+.dpc-now-label { position: absolute; bottom: 100%; margin-bottom: 1px; color: var(--dsw-alias-label-tertiary); font-size: 11px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dpc-now-label[data-edge="mid"] { transform: translateX(-50%); }
+.dpc-now-label[data-edge="end"] { transform: translateX(-100%); }
+.dpc-track { position: relative; height: 6px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
 .dpc-seg { position: absolute; top: 0; bottom: 0; background: var(--dsw-alias-state-warn-primary); }
 .dpc-now { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--dsw-alias-label-primary); }
 .dpc-ticks { position: relative; height: 15px; margin-top: 3px; color: var(--dsw-alias-label-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -920,6 +927,16 @@ window.__ModuleLoader__.load({
 .dpc-row { display: flex; gap: 10px; margin-top: 6px; }
 .dpc-row-key { flex: none; min-width: 96px; color: var(--dsw-alias-label-secondary); }
 .dpc-row-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.dpc-model { display: flex; flex-direction: column; }
+.dpc-model-name { overflow-wrap: anywhere; }
+.dpc-model-provider { color: var(--dsw-alias-label-tertiary); font-size: 11px; overflow-wrap: anywhere; }
+.dpc-summary { display: flex; align-items: center; gap: 6px; width: 100%; cursor: pointer; list-style: none; }
+.dpc-summary::-webkit-details-marker { display: none; }
+.dpc-summary:hover { color: var(--dsw-alias-label-primary); }
+/* A drawn triangle, not a glyph: ▸ falls back to a tofu box in some font stacks. */
+.dpc-summary::before { content: ''; width: 0; height: 0; border-left: 4px solid var(--dsw-alias-label-tertiary); border-top: 3px solid transparent; border-bottom: 3px solid transparent; transition: transform 120ms ease; }
+.dpc-details[open] > .dpc-summary::before { transform: rotate(90deg); }
+.dpc-details[open] > .dpc-summary { margin-bottom: 2px; }
 .dpc-price-model { margin-top: 8px; display: flex; align-items: baseline; gap: 6px; }
 .dpc-price-model-name { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .dpc-price-model-slot { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
@@ -1144,13 +1161,16 @@ window.__ModuleLoader__.load({
 
     /**
      * Format a duration through the dictionaries.
+     *
+     * The badge rounds to minutes above an hour and to seconds below it, and
+     * the tooltip keeps the same resolution so the two never disagree.
+     *
      * @param {Function} t - the translate function.
      * @param {number} ms - the duration.
      * @returns {string} the localized text.
      */
     function durationText(t, ms) {
       const parts = durationParts(ms)
-      if (parts.underMinute) return t('duration.soon')
       if (parts.days > 0) {
         return parts.hours > 0
           ? t('duration.dh', { d: parts.days, h: parts.hours })
@@ -1158,7 +1178,9 @@ window.__ModuleLoader__.load({
       }
       if (parts.hours > 0 && parts.minutes > 0) return t('duration.hm', { h: parts.hours, m: parts.minutes })
       if (parts.hours > 0) return t('duration.h', { h: parts.hours })
-      return t('duration.m', { m: parts.minutes })
+      if (parts.minutes > 0) return t('duration.ms', { m: parts.minutes, s: parts.seconds })
+      if (parts.seconds > 0) return t('duration.s', { s: parts.seconds })
+      return t('duration.soon')
     }
 
     /**
@@ -1319,6 +1341,10 @@ window.__ModuleLoader__.load({
 
     /**
      * The 24-hour band of the viewer's local day with every peak stretch in it.
+     *
+     * The marker carries the local time it stands for, and hugs the nearest
+     * edge of the band instead of overflowing it when the day is nearly over.
+     *
      * @param {object} snapshot - the engine state.
      * @param {string} locale - the formatting locale.
      * @returns {object} the timeline element.
@@ -1332,14 +1358,24 @@ window.__ModuleLoader__.load({
           ? '24:00'
           : formatClock(timeline.dayStartMs + fraction * timeline.dayMs, zone, locale),
       }))
+      const nowFraction = clamp(timeline.nowFraction, 0, 1)
+      const nowEdge = nowFraction <= 0.05 ? 'start' : nowFraction >= 0.95 ? 'end' : 'mid'
       return h('div', { key: 'timeline', 'aria-hidden': 'true' }, [
-        h('div', { key: 'track', className: 'dpc-track' }, [
-          ...timeline.segments.map((segment, index) => h('span', {
-            key: `seg-${index}`,
-            className: 'dpc-seg',
-            style: { left: percent(segment.from), width: percent(segment.to - segment.from) },
-          })),
-          h('span', { key: 'now', className: 'dpc-now', style: { left: percent(timeline.nowFraction) } }),
+        h('div', { key: 'band', className: 'dpc-band' }, [
+          h('span', {
+            key: 'now-label',
+            className: 'dpc-now-label',
+            'data-edge': nowEdge,
+            style: { left: percent(nowFraction) },
+          }, formatClock(snapshot.now, zone, locale)),
+          h('div', { key: 'track', className: 'dpc-track' }, [
+            ...timeline.segments.map((segment, index) => h('span', {
+              key: `seg-${index}`,
+              className: 'dpc-seg',
+              style: { left: percent(segment.from), width: percent(segment.to - segment.from) },
+            })),
+            h('span', { key: 'now', className: 'dpc-now', style: { left: percent(nowFraction) } }),
+          ]),
         ]),
         // Each label sits on its own instant, so the axis matches the bar; the
         // first and last labels hug the edges instead of overflowing them.
@@ -1469,7 +1505,14 @@ window.__ModuleLoader__.load({
           ? null
           : h('div', { key: 'model', className: 'dpc-row' }, [
             h('span', { key: 'k', className: 'dpc-row-key' }, t('rows.model')),
-            h('span', { key: 'v', className: 'dpc-row-value' }, selection.provider === null ? selection.model : `${selection.model} · ${selection.provider}`),
+            // The provider sits under the model, not beside it: a long pair
+            // wrapped mid-token in the composer and read as one broken name.
+            h('span', { key: 'v', className: 'dpc-row-value dpc-model' }, [
+              h('span', { key: 'name', className: 'dpc-model-name', title: selection.model }, selection.model),
+              selection.provider === null
+                ? null
+                : h('span', { key: 'provider', className: 'dpc-model-provider', title: selection.provider }, selection.provider),
+            ]),
           ]),
       ]
 
@@ -1530,10 +1573,12 @@ window.__ModuleLoader__.load({
           h('div', { key: 'next', className: 'dpc-next' }, nextLine),
         ])
 
+      // The table is long and rarely needed at a glance: it folds away so the
+      // balance and this session's spend stay above the fold.
       const priceSection = detached
         ? null
-        : h('div', { key: 'prices', className: 'dpc-sect' }, [
-          h('div', { key: 'title', className: 'dpc-sect-title' }, t('prices.title', { currency: pricing.currency })),
+        : h('details', { key: 'prices', className: 'dpc-sect dpc-details' }, [
+          h('summary', { key: 'title', className: 'dpc-sect-title dpc-summary' }, t('prices.title', { currency: pricing.currency })),
           ...pricing.models.map((model) => PriceBlock({ model, t })),
         ])
 
@@ -1762,7 +1807,7 @@ window.__ModuleLoader__.load({
       }, [open, close])
 
       const stateLabel = snapshot.phase === 'peak' ? t('badge.peak') : t('badge.off')
-      const compact = formatCompact(snapshot.remainingMs, t('minutesShort'), t('daysShort'))
+      const compact = formatCompact(snapshot.remainingMs, t('daysShort'))
       const aria = detached
         ? t('badge.detached')
         : t('badge.aria', { state: stateLabel, time: compact })

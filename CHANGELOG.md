@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.1 — 2026-11-16
+
+Polish pass on the badge and the panel.
+
+- The badge counts seconds inside the last hour (`18:05`), keeps `h:mm` above it and days beyond
+  one, and the tooltip keeps the same resolution instead of rounding to minutes.
+- The timeline's now marker carries the local time it stands for, hugging the edge of the band at
+  the very start and end of a day.
+- The price table folds into a `<details>` block, collapsed by default, so the balance and the
+  session spend stay above the fold.
+- The model row stacks the provider under the model instead of joining them with a separator that
+  wrapped mid-token in the composer.
+
 ## 0.1.0 — 2026-11-16
 
 First version.

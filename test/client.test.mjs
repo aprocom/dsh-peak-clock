@@ -77,6 +77,24 @@ function texts(node, out = []) {
   return out
 }
 
+/**
+ * Every element of a rendered tree, depth first.
+ * @param {unknown} node - an element, an array, or a text node.
+ * @param {object[]} [out] - the accumulator.
+ * @returns {object[]} the elements.
+ */
+function elements(node, out = []) {
+  if (node === null || node === undefined || typeof node !== 'object') return out
+  if (Array.isArray(node)) {
+    for (const child of node) elements(child, out)
+    return out
+  }
+  if (node.type === undefined) return out
+  out.push(node)
+  for (const child of node.children) elements(child, out)
+  return out
+}
+
 const plugin = loadPlugin()
 const internals = plugin.__internals
 
@@ -147,6 +165,10 @@ test('the styles use theme tokens, never literal colors', () => {
   assert.equal(/\brgba?\(/.test(css), false, 'no rgb() colors')
   assert.equal(/\bhsla?\(/.test(css), false, 'no hsl() colors')
   assert.equal(/font-family:\s*['"]/.test(css), false, 'no font family literals')
+  // The fold and the now label are drawn, not decorated with glyphs that may
+  // fall back to tofu.
+  assert.ok(css.includes('.dpc-details[open] > .dpc-summary::before'))
+  assert.ok(css.includes('.dpc-now-label[data-edge="mid"]'))
 })
 
 test('money formatting keeps the currency symbol and the digits asked for', () => {
@@ -160,10 +182,12 @@ test('money formatting keeps the currency symbol and the digits asked for', () =
 test('durations go through the dictionaries', () => {
   const t = (key, params) => (params ? `${key}:${JSON.stringify(params)}` : key)
   assert.equal(internals.durationText(t, 2 * 3600_000 + 18 * 60_000), 'duration.hm:{"h":2,"m":18}')
-  assert.equal(internals.durationText(t, 45 * 60_000), 'duration.m:{"m":45}')
+  assert.equal(internals.durationText(t, 45 * 60_000), 'duration.ms:{"m":45,"s":0}')
+  assert.equal(internals.durationText(t, 45 * 60_000 + 7_000), 'duration.ms:{"m":45,"s":7}')
   assert.equal(internals.durationText(t, 2 * 86400_000 + 15 * 3600_000), 'duration.dh:{"d":2,"h":15}')
   assert.equal(internals.durationText(t, 3 * 86400_000), 'duration.d:{"d":3}')
-  assert.equal(internals.durationText(t, 30_000), 'duration.soon')
+  assert.equal(internals.durationText(t, 30_000), 'duration.s:{"s":30}')
+  assert.equal(internals.durationText(t, 0), 'duration.soon')
 })
 
 const SNAPSHOT = engineState(Date.parse('2026-11-16T02:00:00Z'), {
@@ -358,13 +382,35 @@ test('the timeline labels sit on the same axis as the bar', () => {
   assert.deepEqual(labels.map((tick) => tick.props['data-edge']), ['start', 'mid', 'mid', 'mid', 'end'])
   assert.equal(labels.at(-1).children[0], '24:00')
   // The bar and the labels share one origin: the last segment never ends past it.
-  const track = children.find((child) => child && child.props && child.props.key === 'track')
-  for (const segment of track.children.flat(Infinity)) {
+  const track = elements(internals.Timeline(SNAPSHOT, 'ru-RU')).find((node) => node.props.key === 'track')
+  for (const segment of elements(track)) {
     if (segment.props.className !== 'dpc-seg') continue
     const left = Number.parseFloat(segment.props.style.left)
     const width = Number.parseFloat(segment.props.style.width)
     assert.ok(left >= 0 && left + width <= 100.01, `${left}+${width}`)
   }
+})
+
+test('the timeline names the instant under its now marker', () => {
+  const nodes = elements(internals.Timeline(SNAPSHOT, 'ru-RU'))
+  const label = nodes.find((node) => node.props.key === 'now-label')
+  const marker = nodes.find((node) => node.props.className === 'dpc-now')
+  assert.ok(label && marker, 'both the label and the marker render')
+  assert.equal(label.props.style.left, marker.props.style.left, 'the label tracks the marker')
+  // 02:00 UTC is 05:00 in Moscow, five hours into the local day.
+  assert.equal(texts(label).join(''), '05:00')
+  assert.equal(label.props['data-edge'], 'mid')
+})
+
+test('the now label hugs the edge of the band at the start and the end of a day', () => {
+  const snapshotAt = (iso) => engineState(Date.parse(iso), { calendar: internals.HOLIDAY_CALENDAR.years['2026'], zone: 'Europe/Moscow', locale: 'ru-RU' })
+  const labelOf = (snapshot) => elements(internals.Timeline(snapshot, 'ru-RU')).find((node) => node.props.key === 'now-label')
+  // 21:10 UTC is 00:10 in Moscow: minutes into the day, so the label leans right.
+  assert.equal(labelOf(snapshotAt('2026-11-16T21:10:00Z')).props['data-edge'], 'start')
+  // 20:55 UTC is 23:55 in Moscow, just before the day wraps.
+  assert.equal(labelOf(snapshotAt('2026-11-17T20:55:00Z')).props['data-edge'], 'end')
+  // Mid-day stays centred.
+  assert.equal(labelOf(snapshotAt('2026-11-17T09:00:00Z')).props['data-edge'], 'mid')
 })
 
 test('placePanel keeps the card inside the viewport', () => {
@@ -376,4 +422,75 @@ test('placePanel keeps the card inside the viewport', () => {
   // A badge in the middle of the screen opens the card below itself.
   const middle = internals.placePanel({ getBoundingClientRect: () => ({ left: 500, right: 580, top: 200, bottom: 224 }) }, 340)
   assert.equal(middle.top, 230)
+})
+
+test('the price table is folded away so the money stays above the fold', () => {
+  const panel = internals.Panel({
+    id: 'panel',
+    snapshot: SNAPSHOT,
+    t: identity,
+    locale: 'ru-RU',
+    selection: { provider: 'deepseek-account', model: 'deepseek-flash' },
+    finance: null,
+    financeStatus: 'idle',
+    holidayDegraded: false,
+    onRefresh: () => {},
+    onClose: () => {},
+    bindOutside: () => {},
+    style: {},
+  })
+  const nodes = elements(panel)
+  const details = nodes.find((node) => node.type === 'details' && node.props.key === 'prices')
+  assert.ok(details, 'the price table is a details block')
+  assert.equal(details.props.open, undefined, 'collapsed until asked for')
+  const summary = elements(details).find((node) => node.type === 'summary')
+  assert.equal(summary.props.key, 'title', 'its title is the toggle')
+  assert.equal(summary.props.className.includes('dpc-summary'), true)
+  // The balance and the spend are not folded: they render open every time.
+  const money = nodes.find((node) => node.props.key === 'money')
+  assert.equal(money.type, 'div')
+  assert.ok(texts(money).includes('money.balance'))
+})
+
+test('the model and its provider stack instead of wrapping as one line', () => {
+  const panel = internals.Panel({
+    id: 'panel',
+    snapshot: SNAPSHOT,
+    t: identity,
+    locale: 'ru-RU',
+    selection: { provider: 'deepseek-account', model: 'deepseek-flash' },
+    finance: null,
+    financeStatus: 'idle',
+    holidayDegraded: false,
+    onRefresh: () => {},
+    onClose: () => {},
+    bindOutside: () => {},
+    style: {},
+  })
+  const row = elements(panel).find((node) => node.props.key === 'model')
+  const value = elements(row).find((node) => node.props.key === 'v')
+  assert.equal(value.props.className.includes('dpc-model'), true)
+  const name = elements(value).find((node) => node.props.className === 'dpc-model-name')
+  const provider = elements(value).find((node) => node.props.className === 'dpc-model-provider')
+  assert.equal(texts(name).join(''), 'deepseek-flash')
+  assert.equal(texts(provider).join(''), 'deepseek-account')
+  // The joined form is what wrapped mid-token in the composer.
+  assert.equal(texts(panel).includes('deepseek-flash · deepseek-account'), false)
+})
+
+test('the badge counts seconds inside the last hour', () => {
+  const ctx = {
+    locale: {
+      register: () => () => {},
+      bind: () => (key) => key,
+      subscribe: () => () => {},
+      getSnapshot: () => ({ active: 'ru' }),
+    },
+    get: (name) => (name === 'modelDirectories' ? directoryService('deepseek-account') : null),
+  }
+  const element = internals.PeakClockBadge({ ctx, sessionId: 'session-4', useProjection: () => undefined, t: identity })
+  const time = elements(element).find((node) => node.props.className === 'dpc-time')
+  assert.match(String(time.children[0]), /^(\d+д|\d+:\d{2})$/)
+  const button = elements(element).find((node) => node.type === 'button')
+  assert.match(String(button.props.title), /^badge\.(peak|off) · duration\./)
 })
