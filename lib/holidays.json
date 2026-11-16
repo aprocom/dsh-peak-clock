@@ -1,0 +1,94 @@
+{
+  "source": "holiday-cn (https://github.com/NateScarlet/holiday-cn), transcribed from the State Council notices",
+  "papers": {
+    "2026": "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm",
+    "2027": "https://www.gov.cn/zhengce/zhengceku/202611/content_7085102.htm"
+  },
+  "years": {
+    "2026": {
+      "holidays": {
+        "2026-01-01": "new-year",
+        "2026-01-02": "new-year",
+        "2026-01-03": "new-year",
+        "2026-02-15": "spring-festival",
+        "2026-02-16": "spring-festival",
+        "2026-02-17": "spring-festival",
+        "2026-02-18": "spring-festival",
+        "2026-02-19": "spring-festival",
+        "2026-02-20": "spring-festival",
+        "2026-02-21": "spring-festival",
+        "2026-02-22": "spring-festival",
+        "2026-02-23": "spring-festival",
+        "2026-04-04": "qingming",
+        "2026-04-05": "qingming",
+        "2026-04-06": "qingming",
+        "2026-05-01": "labour-day",
+        "2026-05-02": "labour-day",
+        "2026-05-03": "labour-day",
+        "2026-05-04": "labour-day",
+        "2026-05-05": "labour-day",
+        "2026-06-19": "dragon-boat",
+        "2026-06-20": "dragon-boat",
+        "2026-06-21": "dragon-boat",
+        "2026-09-25": "mid-autumn",
+        "2026-09-26": "mid-autumn",
+        "2026-09-27": "mid-autumn",
+        "2026-10-01": "national-day",
+        "2026-10-02": "national-day",
+        "2026-10-03": "national-day",
+        "2026-10-04": "national-day",
+        "2026-10-05": "national-day",
+        "2026-10-06": "national-day",
+        "2026-10-07": "national-day"
+      },
+      "workdays": {
+        "2026-01-04": "new-year",
+        "2026-02-14": "spring-festival",
+        "2026-02-28": "spring-festival",
+        "2026-05-09": "labour-day",
+        "2026-09-20": "national-day",
+        "2026-10-10": "national-day"
+      }
+    },
+    "2027": {
+      "holidays": {
+        "2027-01-01": "new-year",
+        "2027-01-02": "new-year",
+        "2027-01-03": "new-year",
+        "2027-02-05": "spring-festival",
+        "2027-02-06": "spring-festival",
+        "2027-02-07": "spring-festival",
+        "2027-02-08": "spring-festival",
+        "2027-02-09": "spring-festival",
+        "2027-02-10": "spring-festival",
+        "2027-02-11": "spring-festival",
+        "2027-02-12": "spring-festival",
+        "2027-02-13": "spring-festival",
+        "2027-04-03": "qingming",
+        "2027-04-04": "qingming",
+        "2027-04-05": "qingming",
+        "2027-05-01": "labour-day",
+        "2027-05-02": "labour-day",
+        "2027-05-03": "labour-day",
+        "2027-05-04": "labour-day",
+        "2027-05-05": "labour-day",
+        "2027-06-09": "dragon-boat",
+        "2027-09-15": "mid-autumn",
+        "2027-10-01": "national-day",
+        "2027-10-02": "national-day",
+        "2027-10-03": "national-day",
+        "2027-10-04": "national-day",
+        "2027-10-05": "national-day",
+        "2027-10-06": "national-day",
+        "2027-10-07": "national-day"
+      },
+      "workdays": {
+        "2027-01-31": "spring-festival",
+        "2027-02-14": "spring-festival",
+        "2027-05-08": "labour-day",
+        "2027-09-26": "national-day",
+        "2027-10-09": "national-day"
+      }
+    }
+  }
+}

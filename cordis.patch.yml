@@ -1,0 +1,8 @@
+# dsh-peak-clock — bundle declaration.
+#
+# One Host entry. The same Loader entry carries the browser half declared by
+# package.json's `dsh.client`, which the Web client loads lazily and which
+# contributes the composer badge and its detail panel.
+- insert:
+    - id: peak-clock
+      name: dsh-peak-clock

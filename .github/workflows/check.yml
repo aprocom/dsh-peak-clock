@@ -1,0 +1,21 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate the browser copies and fail when they drifted
+        run: |
+          node scripts/sync-client.mjs
+          git diff --exit-code client.js
+      - name: Test
+        run: node --test

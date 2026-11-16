@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Peak Clock",
+    "description": "DeepSeek charges full price during peak hours and half price outside them. Peak Clock shows which window is in effect right now, with the time left, a local-day timeline, the published price table, your Platform balance and this session's spend. The badge sits in the composer next to the model selector; click it for the detail panel. Peak hours are 01:00-04:00 and 06:00-10:00 UTC, Monday to Friday, excluding Chinese public holidays; everything else is off-peak. Prices, the balance and the spend apply only to models DeepSeek serves directly, and the spend is an estimate priced at the request's settlement time. The balance and the spend need the DeepSeek account service and a signed-in account; without them the clock still works. The holiday calendar ships for 2026-2027 and is fetched from public mirrors for later years."
+  }
+}
